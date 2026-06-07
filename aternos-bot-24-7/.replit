@@ -1,0 +1,9 @@
+modules = ["nodejs-22"]
+[nix]
+packages = ["glib", "nss", "atk", "cairo", "pango", "gbm", "libx11", "libxcomposite", "libxrandr", "libxkbcommon", "libxfixes", "libxdamage", "libxext", "libxi", "libxrender", "alsaLib"]
+[agent]
+expertMode = true
+
+[[ports]]
+localPort = 18789
+externalPort = 80

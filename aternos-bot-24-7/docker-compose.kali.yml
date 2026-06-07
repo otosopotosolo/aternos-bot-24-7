@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  kali-browser:
+    build:
+      context: .
+      dockerfile: Dockerfile.kali
+    container_name: kali-browser-automate
+    hostname: kali-browser
+    environment:
+      - PASSWORD=kalipass123
+      - DISPLAY=:0
+    ports:
+      - "2222:22"  # SSH on port 2222
+    volumes:
+      - ./reports:/workspace/reports
+      - ./freebuff:/workspace/freebuff
+    shm_size: '2gb'  # Fix for Chrome crash in Docker
+    security_opt:
+      - seccomp=unconfined
+    cap_add:
+      - NET_ADMIN
+    restart: unless-stopped
+    networks:
+      - kali-net
+
+networks:
+  kali-net:
+    driver: bridge

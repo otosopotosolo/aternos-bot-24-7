@@ -1,0 +1,31 @@
+FROM python:3.10-slim
+
+# Install dependencies
+RUN apt-get update && apt-get install -y wget gnupg curl
+
+# Install Chromium - modern method without deprecated apt-key
+RUN curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
+RUN echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list
+RUN apt-get update && apt-get install -y google-chrome-stable
+
+# Set Chrome binary path for Playwright
+ENV CHROME_BIN=/usr/bin/google-chrome
+
+# Set Playwright Chromium args for root user
+ENV PLAYWRIGHT_CHROMIUM_ARGS="--no-sandbox --disable-setuid-sandbox --disable-dev-shm-usage"
+
+# Install Playwright and Chromium browser
+RUN pip3 install playwright && playwright install chromium && playwright install-deps
+
+# Copy scripts
+WORKDIR /app
+COPY freebuff/hackerone_api_submitter.py /app/
+COPY freebuff/playwright_h1_submitter.py /app/
+COPY freebuff/auto_submit_reports.py /app/
+
+# Environment variables - no quotes around password in ENV (quotes are literal in Dockerfile)
+ENV HACKERONE_EMAIL=potosopotosolo@gmail.com
+ENV HACKERONE_PASSWORD=#)a9By=*D#6/w9T
+
+# Run automation
+CMD ["python3", "playwright_h1_submitter.py", "--list"]

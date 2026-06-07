@@ -1,0 +1,148 @@
+#!/usr/bin/env expect
+"""
+SARAhack - Tmate Session Automation using Expect
+Automates tmate sessions for freebuff command execution
+
+Usage:
+    ./tmate_expect.exp test
+    ./tmate_expect.exp send "echo test"
+    ./tmate_expect.exp freebuff "navigate to hackerone.com"
+"""
+
+set TMATE_HOST "lon1.tmate.io"
+set TMATE_USER "eS6fytCGPu74pDmMNxAKcszLc"
+set SECRET "EUwteWtAugwWBPqCIUWcuVGq"
+
+set timeout 30
+set output ""
+
+proc connect_tmate {} {
+    global TMATE_HOST TMATE_USER SECRET timeout
+    
+    spawn ssh -o "StrictHostKeyChecking=no" -o "ServerAliveInterval=60" -tt $TMATE_USER@$TMATE_HOST
+    
+    # Wait for connection
+    expect {
+        "password:" {
+            send "$env(SECRET)\r"
+            exp_continue
+        }
+        "Last login:" {
+            puts "[+] Connected to tmate"
+        }
+        timeout {
+            puts "[!] Connection timeout"
+            exit 1
+        }
+        eof {
+            puts "[!] Connection closed"
+            exit 1
+        }
+    }
+}
+
+proc send_command {cmd {wait 3}} {
+    global timeout
+    
+    send "$cmd\r"
+    sleep $wait
+    
+    expect {
+        -re "(.*)\r\n" {
+            set output $expect_out(1,string)
+        }
+        timeout {
+            set output ""
+        }
+    }
+    
+    return $output
+}
+
+proc send_freebuff {prompt {timeout 120}} {
+    global timeout
+    
+    # Escape prompt for shell
+    regsub -all "\"" $prompt "\\\"" escaped_prompt
+    regsub -all "\\$" $prompt "\\$" escaped_prompt
+    
+    # Send freebuff command
+    send "freebuff \"$escaped_prompt\"\r"
+    
+    # Wait for response
+    set timeout $timeout
+    expect {
+        -re "(.*)" {
+            return $expect_out(0,string)
+        }
+        timeout {
+            return "Timeout waiting for freebuff response"
+        }
+    }
+}
+
+# Main script
+set command [lindex $argv 0]
+
+if {$command eq "test"} {
+    puts "[*] Testing tmate connection..."
+    connect_tmate
+    send_command "echo 'Hello from tmate!'"
+    send_command "command -v freebuff || which freebuff || echo 'freebuff not found'"
+    send "exit\r"
+    expect eof
+    puts "[*] Test complete"
+    
+} elseif {$command eq "send"} {
+    set cmd [lindex $argv 1]
+    if {$cmd eq ""} {
+        puts "[!] Usage: tmate_expect.exp send \"command\""
+        exit 1
+    }
+    connect_tmate
+    set result [send_command $cmd]
+    puts $result
+    send "exit\r"
+    expect eof
+    
+} elseif {$command eq "freebuff"} {
+    set prompt [lindex $argv 1]
+    if {$prompt eq ""} {
+        puts "[!] Usage: tmate_expect.exp freebuff \"prompt\""
+        exit 1
+    }
+    connect_tmate
+    set result [send_freebuff $prompt]
+    puts $result
+    send "exit\r"
+    expect eof
+    
+} elseif {$command eq "submit"} {
+    set program [lindex $argv 1]
+    set report_file [lindex $argv 2]
+    
+    if {$program eq "" || $report_file eq ""} {
+        puts "[!] Usage: tmate_expect.exp submit <program> <report_file>"
+        exit 1
+    }
+    
+    puts "[*] Submitting $program report via freebuff..."
+    connect_tmate
+    
+    # Build freebuff prompt for HackerOne submission
+    set prompt "Navigate to https://hackerone.com/$program/reports/new and submit a CORS misconfiguration bug report. Login with potsopotosolo@gmail.com and password )a9By=*D#6/w9T"
+    
+    set result [send_freebuff $prompt 180]
+    puts $result
+    
+    send "exit\r"
+    expect eof
+    
+} else {
+    puts "Usage: tmate_expect.exp <command> [args]"
+    puts "Commands:"
+    puts "  test              - Test tmate connection"
+    puts "  send \"command\"    - Send command to tmate"
+    puts "  freebuff \"prompt\" - Send prompt to freebuff"
+    puts "  submit <prog> <f> - Submit report via freebuff"
+}

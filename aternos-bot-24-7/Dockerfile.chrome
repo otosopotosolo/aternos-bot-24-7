@@ -1,0 +1,29 @@
+# Chrome Docker for Browser Automation
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=0
+
+# Install Chrome and dependencies
+# Note: chromedriver will be installed by Playwright automatically (matching browser version)
+RUN apt-get update && apt-get install -y wget gnupg curl ca-certificates chromium-browser python3 python3-pip vim tmux htop openssh-server && rm -rf /var/lib/apt/lists/*
+
+# Install Playwright
+RUN pip3 install --no-cache-dir playwright && playwright install chromium && playwright install-deps chromium
+
+# SSH configuration
+RUN mkdir -p /var/run/sshd && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config && echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+
+# Set root password (CHANGE THIS for production!)
+RUN echo "root:chromepass123" | chpasswd
+
+WORKDIR /workspace
+
+# Expose ports
+EXPOSE 22 9222
+
+# HEALTHCHECK for Docker
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 CMD curl -f http://localhost:9222/json/version || exit 1
+
+# Start SSH in foreground
+CMD ["/usr/sbin/sshd", "-D"]

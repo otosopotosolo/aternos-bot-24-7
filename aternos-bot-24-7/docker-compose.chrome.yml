@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  chrome-browser:
+    build:
+      context: .
+      dockerfile: Dockerfile.chrome
+    container_name: chrome-browser-automate
+    hostname: chrome-browser
+    environment:
+      - DISPLAY=:0
+    ports:
+      - "9222:9222"  # Chrome DevTools
+      - "2222:22"    # SSH
+    volumes:
+      - ./reports:/workspace/reports
+      - ./freebuff:/workspace/freebuff
+    shm_size: '2gb'
+    security_opt:
+      - seccomp=unconfined
+    restart: unless-stopped
+    networks:
+      - chrome-net
+
+networks:
+  chrome-net:
+    driver: bridge

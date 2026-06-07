@@ -1,0 +1,26 @@
+# Kali Linux Docker for Browser Automation & Penetration Testing
+FROM kalilinux/kali-rolling:latest
+
+# Prevent interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install all packages in one RUN to minimize layers
+RUN apt-get update && apt-get install -y --no-install-recommends nmap masscan nikto sqlmap dirb wpscan hydra john hashcat git wget curl netcat-openbsd dnsutils vim tmux htop tree jq file python3 python3-pip chromium firefox-esr openssh-server && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Install Node.js for Playwright (required for browser automation)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt-get install -y --no-install-recommends nodejs npm && npm install -g playwright
+
+# Create workspace
+WORKDIR /workspace
+
+# SSH configuration
+RUN mkdir -p /var/run/sshd && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config && echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+
+# Set root password (change this for production!)
+RUN echo "root:kalipass123" | chpasswd
+
+# Expose SSH
+EXPOSE 22
+
+# Start SSH in foreground to keep container running
+CMD ["/usr/sbin/sshd", "-D"]

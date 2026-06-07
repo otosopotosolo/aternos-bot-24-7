@@ -1,0 +1,59 @@
+# SARAhack .gitignore
+
+# Credentials (NEVER commit these!)
+config/credentials/.env
+config/credentials/*.evn
+config/credentials/*.json
+config/credentials/*.txt
+
+# Logs
+*.log
+logs/
+
+# Reports (submitted reports contain sensitive info)
+reports/submitted/
+reports/drafts/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.so
+.PIPFILE*
+.venv/
+
+# Temporary files
+*.tmp
+*.swp
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# Downloaded tools
+tools/*/
+!tools/README.md
+
+# Node modules (if any)
+node_modules/
+
+# Git files
+.git/
+.gitignore (except this one)
+
+# Secrets
+*.secret
+*.key
+*.pem
+*.crt
+
+# Token files (contain API keys)
+*.env
+tokenlogin.env
